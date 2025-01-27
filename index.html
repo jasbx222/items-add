@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://kit.fontawesome.com/a2673a891a.js" crossorigin="anonymous"></script>
+  <title>إدارة الأصناف - شركة برمجية</title>
+  <style>
+    body {
+      font-family: 'Tajawal', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      direction: rtl;
+    }
+    header {
+      width: 100%;
+      padding: 20px;
+      background-color: #4caf50;
+      color: #fff;
+      text-align: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: 20px auto;
+    }
+    .form-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      z-index: 5;
+    }
+    .form-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      width: 300px;
+    }
+    .form-container h2 {
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+      color: #4caf50;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+    .form-group input {
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .form-group button {
+      background-color: #4caf50;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .form-group button:hover {
+      background-color: #45a049;
+    }
+    .search-container {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .search-input {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      text-align: right;
+    }
+    .card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      text-align: right;
+      transition: transform 0.3s;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #4caf50;
+    }
+    .card-body {
+      font-size: 1rem;
+      color: #666;
+    }
+    .edit-button {
+      background-color: #4caf50;
+      color: #fff;
+      padding: 10px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s;
+    }
+    .edit-button:hover {
+      background-color: #45a049;
+    }
+    .success-icon {
+      font-size: 2rem;
+      color: green;
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>إدارة الأصناف - شركة المعالج الأول</h1>
+  </header>
+
+  <div class="container">
+    <button class="edit-button" onclick="toggleForm()">
+      <i class="fas fa-pen"></i>
+    </button>
+
+    <div class="form-overlay" id="form-overlay" onclick="closeForm()"></div>
+
+    <div class="form-container" id="form-container">
+      <h2>إضافة صنف جديد</h2>
+      <div class="form-group">
+        <label for="item-name">اسم الصنف</label>
+        <input type="text" id="item-name" placeholder="أدخل اسم الصنف">
+      </div>
+      <div class="form-group">
+        <label for="item-price">السعر</label>
+        <input type="number" id="item-price" placeholder="أدخل السعر">
+      </div>
+      <div class="form-group">
+        <button onclick="addItem()">إضافة</button>
+      </div>
+    </div>
+
+    <div class="success-icon" id="success-icon">
+      <i class="fas fa-check-circle"></i> تم إضافة الصنف بنجاح!
+    </div>
+
+    <div class="search-container">
+      <input 
+        type="text" 
+        id="search-input" 
+        class="search-input" 
+        placeholder="ابحث عن صنف..."
+        oninput="filterItems()">
+    </div>
+
+    <div class="card-container" id="card-container"></div>
+  </div>
+
+  <script>
+    let allItems = [];
+
+    async function fetchData() {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/data');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        allItems = data || [];
+        displayItems(allItems);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('card-container').innerHTML = 
+          '<p style="color: red;">فشل في جلب البيانات. حاول مرة أخرى لاحقًا.</p>';
+      }
+    }
+
+    function displayItems(items) {
+      const container = document.getElementById('card-container');
+      container.innerHTML = '';
+
+      if (items.length === 0) {
+        container.innerHTML = '<p>لا توجد بيانات لعرضها.</p>';
+        return;
+      }
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const title = document.createElement('h2');
+        title.className = 'card-title';
+        title.textContent = `اسم الصنف: ${item.articlename || 'غير معروف'}`;
+
+        const body = document.createElement('p');
+        body.className = 'card-body';
+        body.textContent = `السعر: ${item.salesprice || 'غير متوفر'}`;
+
+        card.appendChild(title);
+        card.appendChild(body);
+        container.appendChild(card);
+      });
+    }
+
+    function filterItems() {
+      const searchInput = document.getElementById('search-input').value.toLowerCase();
+      const filteredItems = allItems.filter(item =>
+        item.articlename && item.articlename.toLowerCase().includes(searchInput)
+      );
+      displayItems(filteredItems);
+    }
+
+    async function addItem() {
+      const name = document.getElementById('item-name').value.trim();
+      const price = document.getElementById('item-price').value.trim();
+
+      if (!name || !price) {
+        alert('يرجى إدخال اسم الصنف والسعر!');
+        return;
+      }
+
+      const newItem = { articlename: name, salesprice: parseFloat(price) };
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/add_item', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newItem),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert(data.message || 'تمت الإضافة بنجاح!');
+          fetchData();
+        } else {
+          alert(`خطأ: ${data.error}`);
+        }
+      } catch (error) {
+        console.error('Error adding item:', error);
+        alert('حدث خطأ أثناء إضافة الصنف.');
+      }
+
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-price').value = '';
+
+      document.getElementById('success-icon').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('success-icon').style.display = 'none';
+        closeForm();
+      }, 2000);
+    }
+
+    function toggleForm() {
+      const formContainer = document.getElementById('form-container');
+      const formOverlay = document.getElementById('form-overlay');
+      const isVisible = formContainer.style.display === 'block';
+      formContainer.style.display = isVisible ? 'none' : 'block';
+      formOverlay.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function closeForm() {
+      const formContainer = document.getElementById('form-container');
+      const formOverlay = document.getElementById('form-overlay');
+      formContainer.style.display = 'none';
+      formOverlay.style.display = 'none';
+    }
+
+    window.onload = closeForm;
+    fetchData();
+  </script>
+</body>
+</html>
